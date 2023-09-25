@@ -60,16 +60,26 @@ def scan_webpage(cve_details, vuln_id):
         exploitability_score = scores[3].div.get_text()
         impact_score = scores[4].div.get_text()
 
-        #links = soup.find(class_='whatever the links are')
-        #for link in links:
-            #if link includes 'mozilla'
-                #add link to table
-            #else
-                #add N/A to table
+        # Check to see if there is a CWE id associated with the vuln_id
+        h2_tag = soup.find('h2', string="CWE ids for " + vuln_id)
+        if h2_tag:
+            cwe = soup.find(class_='list-group-item list-group-item-action')
+            if cwe:
+                cwe_id = cwe.a.get_text()
+            else:
+                cwe_id = "N/A"
+        else:
+            cwe_id = "N/A"
+
+        # Find all the references for the vuln_id and shorten it to just bugzilla links
+        links = [a_tag['href'] for a_tag in soup.select('li.list-group-item.list-group-item-action > a.ssc-ext-link') if
+                 a_tag.has_attr('href')]
+
+        filtered_links = [link for link in links if "bugzilla" in link]
 
 
 
-        cve_details_table.add_row(([vuln_id, ]))
+        cve_details_table.add_row(([vuln_id, base_score, exploitability_score, impact_score, cwe_id, filtered_links, ]))
 
 
         if summary_text:
@@ -79,6 +89,6 @@ def scan_webpage(cve_details, vuln_id):
     else:
         print(f"Failed to retrieve data from {cve_details}. Status code: {response.status_code}")
 
-cve_details_table = PrettyTable([vuln_id, ])
+cve_details_table = PrettyTable(["Vulnerability ID", "Base Score", "Exploitability Score", "Impact Score", "CWE ID", "Bugzilla Links", ])
 
 grab_vuln_id()
