@@ -62,7 +62,6 @@ def scan_webpage(cve_details, vuln_id):
 
         try:
             if scores[5]:
-                print("double scores")
                 base_score = base_score + "\n" + scores[5].div.get_text()
                 exploitability_score = exploitability_score + "\n" + scores[8].div.get_text()
                 impact_score = impact_score + "\n" + scores[9].div.get_text()
