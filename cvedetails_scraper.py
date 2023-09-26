@@ -60,6 +60,15 @@ def scan_webpage(cve_details, vuln_id):
         exploitability_score = scores[3].div.get_text()
         impact_score = scores[4].div.get_text()
 
+        try:
+            if scores[5]:
+                print("double scores")
+                base_score = base_score + "\n" + scores[5].div.get_text()
+                exploitability_score = exploitability_score + "\n" + scores[8].div.get_text()
+                impact_score = impact_score + "\n" + scores[9].div.get_text()
+        except IndexError:
+            pass
+
         # Check to see if there is a CWE id associated with the vuln_id
         h2_tag = soup.find('h2', string="CWE ids for " + vuln_id)
         if h2_tag:
