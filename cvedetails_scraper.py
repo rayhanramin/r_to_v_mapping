@@ -28,14 +28,14 @@ def grab_vuln_id():
         next(csv_reader)
 
         # Iterate through rows and extract the fourth column
+
         for row in csv_reader:
             if len(row) > 2:
                 vuln_id = row[2]
-                if vuln_id != "XBL-scopes":
-                    if vuln_id not in vuln_list:
-                        vuln_list.append(vuln_id)
-                        url = create_url(vuln_id)
-                        scan_webpage(url, vuln_id)
+                if vuln_id not in vuln_list:
+                    vuln_list.append(vuln_id)
+                    url = create_url(vuln_id)
+                    scan_webpage(url, vuln_id)
 
     else:
         print(f"Failed to retrieve data. Status code: {response.status_code}")
@@ -53,12 +53,22 @@ def scan_webpage(cve_details, vuln_id):
     if response.status_code == 200:
         soup = BeautifulSoup(response.content, 'html.parser')
 
+        print(vuln_id)
+
         # Find content by class name
-        summary_text = soup.find(class_='ssc-paragraph cvedetailssummary-text text-dark pb-4 pt-2')
+        try:
+            summary_text = soup.find(class_='ssc-paragraph cvedetailssummary-text text-dark pb-4 pt-2')
+            summary_text = summary_text.get_text()
+        except AttributeError:
+            return
+
         scores = soup.find_all(class_='ps-2')
-        base_score = scores[0].div.get_text()
-        exploitability_score = scores[3].div.get_text()
-        impact_score = scores[4].div.get_text()
+        try:
+            base_score = scores[0].div.get_text()
+            exploitability_score = scores[3].div.get_text()
+            impact_score = scores[4].div.get_text()
+        except IndexError:
+            return
 
         try:
             if scores[5]:
@@ -84,19 +94,23 @@ def scan_webpage(cve_details, vuln_id):
                  a_tag.has_attr('href')]
 
         filtered_links = [link for link in links if "bugzilla" in link]
+        filtered_links_string = '\n'.join(filtered_links)
 
 
 
-        cve_details_table.add_row(([vuln_id, base_score, exploitability_score, impact_score, cwe_id, filtered_links, ]))
+        cve_details_table.add_row(([vuln_id, summary_text, base_score, exploitability_score, impact_score, cwe_id,
+                                    filtered_links_string]))
+                                    #vendor_name, vendor_link, product_name, product_link, matching_versions]))
 
-
-        if summary_text:
-            print(summary_text.get_text())
-        else:
-            print(f"No summary text found for {cve_details}")
     else:
         print(f"Failed to retrieve data from {cve_details}. Status code: {response.status_code}")
 
-cve_details_table = PrettyTable(["Vulnerability ID", "Base Score", "Exploitability Score", "Impact Score", "CWE ID", "Bugzilla Links", ])
+cve_details_table = PrettyTable(["Vulnerability ID", "Summary Text", "Base Score", "Exploitability Score", "Impact Score", "CWE ID",
+                                 "Bugzilla Links"])
+                                 #"Vendor Name", "Vendor Link", "Product Name", "Product Link",
+                                 #"Matching Versions"])
 
 grab_vuln_id()
+
+with open("cve_details_table.csv", "w", newline='') as csvfile:
+    csvfile.write(cve_details_table.get_csv_string())
